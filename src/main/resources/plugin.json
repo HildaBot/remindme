@@ -1,0 +1,6 @@
+{
+    "name": "remindme",
+    "mainClass": "ch.jamiete.hilda.remindme.RemindMePlugin",
+    "version": "${pom.version}",
+    "author": "antropos"
+}
