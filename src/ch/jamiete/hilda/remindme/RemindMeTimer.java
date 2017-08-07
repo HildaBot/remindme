@@ -18,9 +18,9 @@ package ch.jamiete.hilda.remindme;
 import java.util.TimerTask;
 
 public class RemindMeTimer extends TimerTask {
-    private final RemindMe reminder;
+    private final Reminder reminder;
 
-    public RemindMeTimer(final RemindMe reminder) {
+    public RemindMeTimer(final Reminder reminder) {
         this.reminder = reminder;
     }
 

@@ -23,26 +23,25 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import ch.jamiete.hilda.Hilda;
 import ch.jamiete.hilda.plugins.HildaPlugin;
-import ch.jamiete.hilda.remindme.commands.RemindMeBaseCommand;
+import ch.jamiete.hilda.remindme.commands.RemindCommand;
 
 public class RemindMePlugin extends HildaPlugin {
-    public static final long MAXIMUM_LENGTH = 129600000; // 36 hours
+    public static final long MAXIMUM_LENGTH = 604800000; // 1 week
 
-    private final ArrayList<RemindMe> remindMes = new ArrayList<RemindMe>();
+    private final List<Reminder> reminders = Collections.synchronizedList(new ArrayList<Reminder>());
 
     public RemindMePlugin(final Hilda hilda) {
         super(hilda);
     }
 
-    public void addRemindMe(final RemindMe remindme) {
-        this.remindMes.add(remindme);
+    public void addReminder(final Reminder remindme) {
+        this.reminders.add(remindme);
     }
 
     /**
@@ -58,7 +57,7 @@ public class RemindMePlugin extends HildaPlugin {
 
         final String possibleid = String.valueOf(alphabet.charAt(random.nextInt(alphabet.length()))) + String.valueOf(numbers.charAt(random.nextInt(numbers.length())));
 
-        for (final RemindMe remindMe : this.remindMes) {
+        for (final Reminder remindMe : this.reminders) {
             if (remindMe.getId().equals(possibleid)) {
                 return this.getFreshID();
             }
@@ -69,12 +68,12 @@ public class RemindMePlugin extends HildaPlugin {
         return possibleid;
     }
 
-    public RemindMe getRemindMeByID(final String id) {
-        return this.remindMes.stream().filter(v -> v.getId().equalsIgnoreCase(id)).findFirst().orElse(null);
+    public Reminder getRemindMeByID(final String id) {
+        return this.reminders.stream().filter(v -> v.getId().equalsIgnoreCase(id)).findFirst().orElse(null);
     }
 
-    public List<RemindMe> getRemindMes() {
-        return Collections.unmodifiableList(this.remindMes);
+    public List<Reminder> getRemindMes() {
+        return Collections.unmodifiableList(this.reminders);
     }
 
     @Override
@@ -83,51 +82,22 @@ public class RemindMePlugin extends HildaPlugin {
     }
 
     @Override
-    public void save() {
-        final File folder = new File("data");
-
-        if (!folder.isDirectory()) {
-            folder.mkdir();
-        }
-
-        try {
-            final File file = new File(folder, "remindmes.hilda");
-
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-
-            final FileOutputStream stream = new FileOutputStream("data/remindmes.hilda", false);
-            final ObjectOutputStream obj = new ObjectOutputStream(stream);
-
-            obj.writeObject(this.remindMes);
-
-            Hilda.getLogger().info("Saved " + this.remindMes.size() + " remind-mes to disk");
-
-            obj.close();
-            stream.close();
-        } catch (final Exception e) {
-            Hilda.getLogger().log(Level.SEVERE, "Failed to save remind-mes to disk", e);
-        }
-    }
-
-    @Override
     public void onEnable() {
-        this.getHilda().getCommandManager().registerChannelCommand(new RemindMeBaseCommand(this.getHilda(), this));
+        this.getHilda().getCommandManager().registerChannelCommand(new RemindCommand(this.getHilda(), this));
 
-        final File file = new File("data/remindmes.hilda");
+        final File file = new File("data/reminders.hilda");
 
-        final ArrayList<RemindMe> loaded = new ArrayList<RemindMe>();
+        final ArrayList<Reminder> loaded = new ArrayList<Reminder>();
         int ended = 0;
         int rejected = 0;
-
 
         if (file.exists()) {
             try {
                 final FileInputStream stream = new FileInputStream(file);
                 final ObjectInputStream obj = new ObjectInputStream(stream);
 
-                final ArrayList<RemindMe> list = (ArrayList<RemindMe>) obj.readObject();
+                @SuppressWarnings("unchecked")
+                final List<Reminder> list = (List<Reminder>) obj.readObject();
 
                 if (list != null && !list.isEmpty()) {
                     loaded.addAll(list);
@@ -142,43 +112,72 @@ public class RemindMePlugin extends HildaPlugin {
             }
         }
 
-        for (final RemindMe remindme : loaded) {
-            remindme.setHilda(this.getHilda());
-            remindme.setPlugin(this);
+        for (final Reminder reminder : loaded) {
+            reminder.setHilda(this.getHilda());
+            reminder.setPlugin(this);
 
-            if (this.getHilda().getBot().getTextChannelById(remindme.getChannelId()) == null) {
+            if (this.getHilda().getBot().getUserById(reminder.getUserId()) == null) {
                 rejected++;
                 continue;
             }
 
-            if (System.currentTimeMillis() >= remindme.getRemindMeDate()) {
-                remindme.finish();
+            if (reminder.hasExpired()) {
+                reminder.finish();
                 ended++;
                 continue;
             } else {
-                final long remaining = remindme.getRemindMeDate() - System.currentTimeMillis();
-                final ScheduledFuture<?> future = this.getHilda().getExecutor().schedule(new RemindMeTimer(remindme), remaining, TimeUnit.MILLISECONDS);
-                remindme.setFuture(future);
+                final long remaining = reminder.getExpiry() - System.currentTimeMillis();
+                final ScheduledFuture<?> future = this.getHilda().getExecutor().schedule(new RemindMeTimer(reminder), remaining, TimeUnit.MILLISECONDS);
+                reminder.setFuture(future);
             }
 
-            this.remindMes.add(remindme);
+            this.reminders.add(reminder);
 
-            remindme.check();
+            reminder.check();
         }
 
-        Hilda.getLogger().info("Loaded " + this.remindMes.size() + " current remind-mes from disk");
+        Hilda.getLogger().info("Loaded " + this.reminders.size() + " current reminders from disk");
 
         if (ended > 0) {
-            Hilda.getLogger().info("Loaded and ended " + ended + " expired remind-mes from disk");
+            Hilda.getLogger().info("Loaded and ended " + ended + " expired reminders from disk");
         }
 
         if (rejected > 0) {
-            Hilda.getLogger().info("Loaded and rejected " + rejected + " malformed remind-mes from disk");
+            Hilda.getLogger().info("Loaded and rejected " + rejected + " malformed reminders from disk");
         }
     }
 
-    public void remove(final RemindMe remindme) {
-        this.remindMes.remove(remindme);
+    public void remove(final Reminder remindme) {
+        this.reminders.remove(remindme);
+    }
+
+    @Override
+    public void save() {
+        final File folder = new File("data");
+
+        if (!folder.isDirectory()) {
+            folder.mkdir();
+        }
+
+        try {
+            final File file = new File(folder, "reminders.hilda");
+
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            final FileOutputStream stream = new FileOutputStream("data/reminders.hilda", false);
+            final ObjectOutputStream obj = new ObjectOutputStream(stream);
+
+            obj.writeObject(this.reminders);
+
+            Hilda.getLogger().info("Saved " + this.reminders.size() + " reminders to disk");
+
+            obj.close();
+            stream.close();
+        } catch (final Exception e) {
+            Hilda.getLogger().log(Level.SEVERE, "Failed to save reminders to disk", e);
+        }
     }
 
 }
