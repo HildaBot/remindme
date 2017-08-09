@@ -95,7 +95,7 @@ public class RemindCommand extends ChannelCommand {
         final MessageBuilder mb = new MessageBuilder();
 
         mb.append(":hourglass_flowing_sand: OK ").append(message.getAuthor().getName(), Formatting.BOLD).append(", ");
-        mb.append("I'll remind you about ").append(reminder.getMessage(), Formatting.BOLD).append(" in ");
+        mb.append("I'll remind you about ").append(Util.sanitise(reminder.getMessage()), Formatting.BOLD).append(" in ");
         mb.append(Util.getFriendlyTime(bundle.getTime()), Formatting.BOLD).append("!");
 
         this.reply(message, mb.build());
