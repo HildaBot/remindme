@@ -171,7 +171,7 @@ public class RemindMePlugin extends HildaPlugin {
 
             obj.writeObject(this.reminders);
 
-            Hilda.getLogger().info("Saved " + this.reminders.size() + " reminders to disk");
+            Hilda.getLogger().fine("Saved " + this.reminders.size() + " reminders to disk");
 
             obj.close();
             stream.close();
