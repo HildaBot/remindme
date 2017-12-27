@@ -143,7 +143,7 @@ public class Reminder implements Serializable {
     }
 
     public void setMessage(final String message) {
-        this.message = new MessageBuilder().append(message).build().getStrippedContent();
+        this.message = new MessageBuilder().append(message).build().getContentStripped();
     }
 
     public void setPlugin(final RemindMePlugin plugin) {
