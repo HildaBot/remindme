@@ -21,10 +21,8 @@ import java.io.Serializable;
 import java.util.concurrent.ScheduledFuture;
 import ch.jamiete.hilda.Hilda;
 import ch.jamiete.hilda.Util;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.MessageBuilder.Formatting;
-import net.dv8tion.jda.core.MessageBuilder.SplitPolicy;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.User;
 
 public class Reminder implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -83,8 +81,8 @@ public class Reminder implements Serializable {
         final long ago = System.currentTimeMillis() - this.creationTime;
 
         mb.append(":hourglass: ");
-        mb.append(user.getName(), Formatting.BOLD).append(", you asked me to remind you ");
-        mb.append(this.message, Formatting.BOLD).append(" ").append(Util.getFriendlyTime(ago)).append(" ago.");
+        mb.append(user.getName(), MessageBuilder.Formatting.BOLD).append(", you asked me to remind you ");
+        mb.append(this.message, MessageBuilder.Formatting.BOLD).append(" ").append(Util.getFriendlyTime(ago)).append(" ago.");
 
         final long difference = System.currentTimeMillis() - this.expiryTime;
 
@@ -93,7 +91,7 @@ public class Reminder implements Serializable {
             mb.append(" later than I was meant to. Sorry.");
         }
 
-        user.openPrivateChannel().queue(c -> mb.buildAll(SplitPolicy.SPACE).forEach(m -> c.sendMessage(m).queue()));
+        user.openPrivateChannel().queue(c -> mb.buildAll(MessageBuilder.SplitPolicy.SPACE).forEach(m -> c.sendMessage(m).queue()));
 
         this.end();
     }

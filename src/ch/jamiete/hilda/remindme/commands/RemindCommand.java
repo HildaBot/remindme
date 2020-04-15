@@ -18,6 +18,7 @@
 package ch.jamiete.hilda.remindme.commands;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import ch.jamiete.hilda.Hilda;
@@ -29,9 +30,8 @@ import ch.jamiete.hilda.remindme.Reminder;
 import ch.jamiete.hilda.util.time.TimeBundle;
 import ch.jamiete.hilda.util.time.TimeParseException;
 import ch.jamiete.hilda.util.time.TimeParser;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.MessageBuilder.Formatting;
-import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Message;
 
 public class RemindCommand extends ChannelCommand {
     private final RemindMePlugin plugin;
@@ -41,7 +41,7 @@ public class RemindCommand extends ChannelCommand {
 
         this.plugin = plugin;
         this.setName("remind");
-        this.setAliases(Arrays.asList(new String[] { "remindme" }));
+        this.setAliases(Collections.singletonList("remindme"));
         this.setDescription("Remind me system.");
     }
 
@@ -56,7 +56,7 @@ public class RemindCommand extends ChannelCommand {
             args = Arrays.copyOfRange(args, 1, args.length);
         }
 
-        TimeBundle bundle = null;
+        TimeBundle bundle;
         final long creation = System.currentTimeMillis();
 
         try {
@@ -94,9 +94,9 @@ public class RemindCommand extends ChannelCommand {
 
         final MessageBuilder mb = new MessageBuilder();
 
-        mb.append(":hourglass_flowing_sand: OK ").append(message.getAuthor().getName(), Formatting.BOLD).append(", ");
-        mb.append("I'll remind you about ").append(Util.sanitise(reminder.getMessage()), Formatting.BOLD).append(" in ");
-        mb.append(Util.getFriendlyTime(bundle.getTime()), Formatting.BOLD).append("!");
+        mb.append(":hourglass_flowing_sand: OK ").append(message.getAuthor().getName(), MessageBuilder.Formatting.BOLD).append(", ");
+        mb.append("I'll remind you about ").append(Util.sanitise(reminder.getMessage()), MessageBuilder.Formatting.BOLD).append(" in ");
+        mb.append(Util.getFriendlyTime(bundle.getTime()), MessageBuilder.Formatting.BOLD).append("!");
 
         this.reply(message, mb.build());
     }

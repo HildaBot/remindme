@@ -34,7 +34,7 @@ import ch.jamiete.hilda.remindme.commands.RemindCommand;
 public class RemindMePlugin extends HildaPlugin {
     public static final long MAXIMUM_LENGTH = 604800000; // 1 week
 
-    private final List<Reminder> reminders = Collections.synchronizedList(new ArrayList<Reminder>());
+    private final List<Reminder> reminders = Collections.synchronizedList(new ArrayList<>());
 
     public RemindMePlugin(final Hilda hilda) {
         super(hilda);
@@ -55,7 +55,7 @@ public class RemindMePlugin extends HildaPlugin {
         final String numbers = "23456789";
         final Random random = new Random();
 
-        final String possibleid = String.valueOf(alphabet.charAt(random.nextInt(alphabet.length()))) + String.valueOf(numbers.charAt(random.nextInt(numbers.length())));
+        final String possibleid = alphabet.charAt(random.nextInt(alphabet.length())) + String.valueOf(numbers.charAt(random.nextInt(numbers.length())));
 
         for (final Reminder remindMe : this.reminders) {
             if (remindMe.getId().equals(possibleid)) {
@@ -87,7 +87,7 @@ public class RemindMePlugin extends HildaPlugin {
 
         final File file = new File("data/reminders.hilda");
 
-        final ArrayList<Reminder> loaded = new ArrayList<Reminder>();
+        final ArrayList<Reminder> loaded = new ArrayList<>();
         int ended = 0;
         int rejected = 0;
 
